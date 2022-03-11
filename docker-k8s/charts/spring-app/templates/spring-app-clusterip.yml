@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "spring-app.fullname" . }}
+  labels: 
+    {{- include "spring-app.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "spring-app.selectorLabels" . | nindent 4 }}
+    layer: application
+  ports:
+  - protocol: TCP
+    port: {{ .Values.app.port }}
+    targetPort: 8080

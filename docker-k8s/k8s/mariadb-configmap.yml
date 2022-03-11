@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mariadb-configmap
+  namespace: keepcoding
+data:
+  MARIADB_DATABASE: "spring_app"

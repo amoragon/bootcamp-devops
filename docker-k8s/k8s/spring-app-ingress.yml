@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-spring-host
+  namespace: keepcoding
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/rewrite-target: /demo/all
+    cert-manager.io/cluster-issuer: letsencrypt-staging
+spec:
+  tls:
+  - hosts:
+    - practica.34-77-204-69.nip.io
+    secretName: nginx-ingress-ssl-cert
+  rules:
+  - host: practica.34-77-204-69.nip.io
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: spring-app
+            port:
+              number: 80

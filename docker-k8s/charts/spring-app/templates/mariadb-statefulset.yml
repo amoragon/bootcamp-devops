@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "spring-app.fullname" . }}
+  labels:
+    {{- include "spring-app.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicas.db }}
+  selector:
+    matchLabels:
+      {{- include "spring-app.selectorLabels" . | nindent 6 }}
+      layer: database
+  serviceName: mariadb
+  template:
+    metadata:
+      labels:
+        {{- include "spring-app.selectorLabels" . | nindent 8 }}
+        layer: database
+    spec:
+      affinity:
+        {{- if .Values.affinity.app_db.enabled }}
+        podAffinity:
+        {{- else }}
+        podAntiAffinity:
+        {{- end }}
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  {{- include "spring-app.selectorLabels" . | nindent 18 }}
+                  layer: application
+              topologyKey: "kubernetes.io/hostname"
+            weight: 1
+      containers:
+      - image: mariadb
+        name: mariadb
+        ports:
+        - containerPort: 3306
+        volumeMounts:
+        - name: mariadb-data
+          mountPath: /var/lib/mysql
+        env:
+          - name: MARIADB_USER 
+            valueFrom:
+              secretKeyRef:
+                name: "{{ include "spring-app.fullname" . }}-secrets"
+                key: mariadb-user
+          - name: MARIADB_ROOT_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: "{{ include "spring-app.fullname" . }}-secrets"
+                key: mariadb-root-password
+          - name: MARIADB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: "{{ include "spring-app.fullname" . }}-secrets"
+                key: mariadb-password
+          - name: MARIADB_DATABASE
+            valueFrom:
+              configMapKeyRef:
+                name: "{{ include "spring-app.fullname" . }}-configmap"
+                key: DB_SCHEMA
+
+  volumeClaimTemplates:
+  - metadata:
+      name: mariadb-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "standard"
+      resources:
+        requests:
+          storage: {{ .Values.volumeStorageSize | quote }}
+

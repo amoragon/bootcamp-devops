@@ -1,0 +1,36 @@
+db:
+  name: spring-db
+  user: ...
+  password: ...
+  rootPassword:
+  servicePort: 3306
+
+app:
+  host: keepcoding.34-140-183-235.nip.io
+  port: 80
+
+replicas:
+  db: 1
+  app: 1
+
+volumeStorageSize: 1Gi
+
+affinity:
+  app_db:
+    enabled: true
+  app_app:
+    enabled: false
+
+hpa:
+  maxReplicas: 5
+  minReplicas: 2
+  cpuPercentage: 50
+  
+cert_manager:
+  enabled: true
+  ingress:
+    secretName: nginx-ingress-ssl-cert
+  cluster_issuer:
+    email: antonio.moragon@gmail.com
+    env: prod 
+    secretKey: very-secret-key

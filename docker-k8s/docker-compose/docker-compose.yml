@@ -1,0 +1,38 @@
+version: "3"
+services:
+  spring-app-db:
+    container_name: spring-app-db
+    image: mariadb
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
+      MARIADB_USER: ${MARIADB_USER}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD}
+      MARIADB_DATABASE: ${MARIADB_DATABASE}
+    volumes:
+      - mariadb-data:/var/lib/mysql
+    networks:
+      - spring-app-network
+
+  spring-app:
+    depends_on:
+      - spring-app-db
+    build: .
+    container_name: spring-app
+    restart: always
+    environment:
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_USER: ${DB_USER}
+      DB_USER_PASSWD: ${DB_USER_PASSWD}
+      DB_SCHEMA: ${DB_SCHEMA} 
+    ports:
+      - 80:8080
+    networks:
+      - spring-app-network
+
+volumes:
+  mariadb-data:
+
+networks:
+  spring-app-network:
+    driver: bridge

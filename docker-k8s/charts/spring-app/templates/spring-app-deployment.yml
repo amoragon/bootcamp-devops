@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "spring-app.fullname" . }}
+  labels:
+    {{- include "spring-app.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicas.app }}
+  selector:
+    matchLabels:
+      {{- include "spring-app.selectorLabels" . | nindent 6 }}
+      layer: application
+  template:
+    metadata:
+      labels:
+        {{- include "spring-app.selectorLabels" . | nindent 8 }}
+        layer: application
+    spec:
+      affinity:
+        {{- if .Values.affinity.app_db.enabled }}
+        podAffinity:
+        {{- else }}
+        podAntiAffinity:
+        {{- end }}
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  {{- include "spring-app.selectorLabels" . | nindent 18 }}
+                  layer: database
+              topologyKey: "kubernetes.io/hostname"
+        {{- if .Values.affinity.app_app.enabled }}
+        podAffinity:
+        {{- else }}
+        podAntiAffinity:
+        {{- end }}
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  {{- include "spring-app.selectorLabels" . | nindent 18 }}
+                  layer: application
+              topologyKey: "kubernetes.io/hostname"
+      containers:
+      - image: amoragon/spring-app
+        name: spring-app
+        ports:
+        - containerPort: 8080
+        env:
+          - name: DB_USER 
+            valueFrom:
+              secretKeyRef:
+                name: "{{ include "spring-app.fullname" . }}-secrets"
+                key: mariadb-user
+          - name: DB_USER_PASSWD
+            valueFrom:
+              secretKeyRef:
+                name: "{{ include "spring-app.fullname" . }}-secrets"
+                key: mariadb-password
+          - name: DB_HOST
+            valueFrom:
+              configMapKeyRef:
+                name: "{{ include "spring-app.fullname" . }}-configmap"
+                key: DB_HOST
+          - name: DB_PORT
+            valueFrom:
+              configMapKeyRef:
+                name: "{{ include "spring-app.fullname" . }}-configmap"
+                key: DB_PORT
+          - name: DB_SCHEMA
+            valueFrom:
+              configMapKeyRef:
+                name: "{{ include "spring-app.fullname" . }}-configmap"
+                key: DB_SCHEMA

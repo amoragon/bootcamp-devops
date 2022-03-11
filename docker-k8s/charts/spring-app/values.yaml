@@ -1,0 +1,36 @@
+db:
+  name: spring-db
+  user: 
+  password:
+  rootPassword:
+  servicePort: 3306
+
+app:
+  host: demo.34-76-208-229.nip.io
+  port: 80
+
+replicas:
+  db: 1
+  app: 1
+
+volumeStorageSize: 1Gi
+
+affinity:
+  app_db:
+    enabled: true
+  app_app:
+    enabled: false
+
+hpa:
+  maxReplicas: 10
+  minReplicas: 1
+  cpuPercentage: 70
+
+certManager:
+  enabled: true
+  ingress:
+    secretName: nginx-ingress-ssl-cert
+  clusterIssuer:
+    email: antonio.moragon@gmail.com
+    env: staging 
+    secretKey: very-secret-key

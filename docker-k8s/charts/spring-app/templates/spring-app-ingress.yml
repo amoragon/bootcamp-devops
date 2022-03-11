@@ -1,0 +1,31 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: "{{ include "spring-app.fullname" . }}-ingress"
+  labels:
+    {{- include "spring-app.labels" . | nindent 4 }}
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/rewrite-target: /demo/all
+spec:
+  {{- if .Values.certManager.enabled }}
+  tls:
+  - hosts:
+    - {{ .Values.app.host }}
+    {{- if .Values.certManager.ingress.secretName }}
+    secretName: {{ .Values.certManager.ingress.secretName }}
+    {{- else }}
+    secretName: {{ randAlphaNum 20 }}
+    {{- end }}
+  {{- end }}
+  rules:
+  - host: {{ .Values.app.host | quote }}
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: {{ include "spring-app.fullname" . }}
+            port:
+              number: {{ .Values.app.port }}

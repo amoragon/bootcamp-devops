@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spring-app
+  namespace: keepcoding
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: spring-app
+  template:
+    metadata:
+      name: spring-app
+      labels:
+        app: spring-app
+    spec:
+      affinity:
+        podAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  app: mariadb
+              topologyKey: "kubernetes.io/hostname"
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            podAffinityTerm: 
+              labelSelector: 
+                matchLabels:
+                  app: spring-app
+              topologyKey: "kubernetes.io/hostname"
+      containers:
+      - image: amoragon/spring-app
+        name: spring-app
+        ports:
+        - containerPort: 8080
+        env:
+          - name: DB_USER 
+            valueFrom:
+              secretKeyRef:
+                name: secrets
+                key: mariadb-user
+          - name: DB_USER_PASSWD
+            valueFrom:
+              secretKeyRef:
+                name: secrets
+                key: mariadb-password
+          - name: DB_HOST
+            valueFrom:
+              configMapKeyRef:
+                name: spring-app-configmap
+                key: DB_HOST
+          - name: DB_PORT
+            valueFrom:
+              configMapKeyRef:
+                name: spring-app-configmap
+                key: DB_PORT
+          - name: DB_SCHEMA
+            valueFrom:
+              configMapKeyRef:
+                name: spring-app-configmap
+                key: DB_SCHEMA
