@@ -1,0 +1,36 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|  
+  
+	config.vm.define "elk", primary:true do |elk|    
+		elk.vm.box = "spox/ubuntu-arm"  
+		elk.vm.hostname = "elk"
+		elk.vm.box_check_update = false
+		elk.vm.network :private_network, ip:"192.168.0.10"
+		elk.vm.network "forwarded_port", guest: 80, host: 8081
+		elk.vm.network "forwarded_port", guest: 9200, host: 9200
+		elk.vm.provider "vmware_desktop" do |vd|
+    			vd.memory = "4096"
+			vd.cpus = 1
+  		end
+		elk.vm.provision "file", source: "./provisioning-scripts/elk/settings.sh", destination:"~/elk/settings.sh"
+		elk.vm.provision "file", source: "./provisioning-scripts/common.sh", destination:"~/elk/common.sh"
+		elk.vm.provision "shell", path: "./provisioning-scripts/install-elk"
+	end
+
+	config.vm.define "wordpress" do |wordpress|
+                wordpress.vm.box = "spox/ubuntu-arm"
+                wordpress.vm.hostname = "wordpress"
+                wordpress.vm.box_check_update = false
+                wordpress.vm.network :private_network, ip:"192.168.0.11"
+                wordpress.vm.network "forwarded_port", guest: 80, host: 8080
+                wordpress.vm.provider "vmware_desktop" do |vd|
+                        vd.memory = "1024"
+                        vd.cpus = 1
+                end
+		wordpress.vm.provision "file", source: "./provisioning-scripts/wordpress/settings.sh", destination:"~/wordpress/settings.sh"
+		wordpress.vm.provision "file", source: "./provisioning-scripts/common.sh", destination:"~/wordpress/common.sh"
+        	wordpress.vm.provision "shell", path: "./provisioning-scripts/install-wordpress"
+    	end
+end

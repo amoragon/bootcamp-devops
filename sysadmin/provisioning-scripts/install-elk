@@ -1,0 +1,88 @@
+#!/bin/bash
+
+# Deshabilitamos la posibilidad de solicitar informacion al usuario
+# para evitar el warning siguiente: "dpkg-preconfigure: unable to re-open stdin: No such file or directory"
+export DEBIAN_FRONTEND=noninteractive
+
+# Importamos los scripts externos
+source ./elk/settings.sh
+source ./elk/common.sh
+
+###############################
+# INSTALACION DE DEPENDENCIAS #
+###############################
+
+echo "------------------------"
+echo "Installing JRE and Nginx"
+echo "------------------------"
+
+# Instalamos JRE y Nginx
+apt-get update && apt-get install -y default-jre nginx 2> apt-error.log
+
+# Incluimos el repositorio APT para Elastic
+common::add_elastic_apt_repository
+
+#############################
+# INSTALACION ELASTICSEARCH #
+#############################
+
+echo "------------------------"
+echo "Installing ElasticSearch"
+echo "------------------------"
+
+# Instalamos elasticsearch si no lo esta
+apt-get update && apt-get install elasticsearch 2>> apt-error.log
+
+# Habilitamos el servicio si no lo esta
+common::enable_service elasticsearch.service
+
+# Arrancamos el servicio si no lo esta
+common::start_service elasticsearch.service
+
+########################
+# INSTALACION LOGSTASH #
+########################
+
+echo "-------------------"
+echo "Installing Logstash"
+echo "-------------------"
+
+apt-get install logstash 2>> apt-error.log
+
+# Establecemos la configuración de Logstash
+settings::set_logstash_input_conf
+
+# filter configuration file
+settings::set_logstash_filter_conf
+
+# output configuration file
+settings::set_logstash_output_conf
+
+# Habilitamos el servicio si no lo esta
+common::enable_service logstash.service
+
+# Arrancamos el servicio si no lo esta
+common::start_service logstash.service
+
+######################
+# INSTALACION KIBANA #
+######################
+
+echo "-----------------"
+echo "Installing Kibana"
+echo "-----------------"
+
+apt-get install kibana 2>> apt-error.log
+
+# Establecemos la configuración de Nginx para Kibana
+settings::set_nginx_conf
+
+# Reiniciamos Nginx para que surta efecto la nueva configuracion
+common::stop_service nginx.service
+common::start_service nginx.service
+
+# Habilitamos el servicio si no lo esta
+common::enable_service kibana.service
+
+## Arrancamos el servicio si no lo esta
+common::start_service kibana.service

@@ -1,0 +1,95 @@
+#!/bin/bash
+
+# Deshabilitamos la posibilidad de solicitar informacion al usuario
+# para evitar el warning siguiente: "dpkg-preconfigure: unable to re-open stdin: No such file or directory"
+export DEBIAN_FRONTEND=noninteractive
+
+# Importamos los scripts externos
+source ./wordpress/settings.sh
+source ./wordpress/common.sh
+
+##################################
+# INSTALACION DE NGINX Y MARIADB #
+##################################
+
+echo "----------------------------"
+echo "Installing Nginx and MariaDB"
+echo "----------------------------"
+
+apt-get update && sudo apt-get install -y nginx mariadb-server mariadb-common php-fpm php-mysql expect php-curl php-gd php-intl php-mbstring php-soap php-xml php-xmlrpc php-zip 2> apt-error.log
+
+# Paramos los servicios de Nginx y php7.4-fmp en caso de que lo esten
+# para realizar las modificaciones de configuracion necesarias
+common::stop_service nginx.service
+common::stop_service php7.4-fpm.service
+
+# Establecemos la configuracion de Wordpress en  Nginx
+settings::set_nginx_conf
+cd /etc/nginx/sites-enabled
+rm default
+ln -s  /etc/nginx/sites-available/wordpress default
+
+# Habilitamos los servicios de Nginx y php7.4-fmmp si no lo estan
+common::enable_service nginx.service
+common::enable_service php7.4-fpm.service
+
+# Arrancamos los servicios de Nginx y php7.4-fpm despues de los cambios en la configuracion
+common::start_service nginx.service
+common::start_service php7.4-fpm.service
+
+# Creacion y securizacion base de datos de Wordpress
+export db_root_password=$(cat /vagrant/.mysql_root_password)
+settings::mysql_secure_installation
+settings::create_wp_db
+
+############################
+# INSTALACION DE WORDPRESS #
+############################
+
+echo "--------------------"
+echo "Installing Wordpress"
+echo "--------------------"
+
+# Descargamos Wordpress 
+echo -n "Downloading Wordpress..."
+cd /var/www
+wget -c -q https://wordpress.org/latest.tar.gz
+tar xfz latest.tar.gz
+rm latest.tar.gz
+echo "ok!"
+
+# Modificamos los parametros de configuracion de conexion a base de datos
+echo -n "Modifying wordpress settings..."
+cd wordpress
+cp wp-config-sample.php wp-config.php
+sed -i 's/database_name_here/wordpress/g' wp-config.php
+sed -i 's/username_here/wordpressuser/g' wp-config.php
+sed -i 's/password_here/keepcoding/g' wp-config.php
+
+# Cambiamos el dueño del directorio
+chown -R www-data:www-data . 
+echo "ok!"
+
+###########################
+# INSTALACION DE FILEBEAT #
+###########################
+
+echo "-------------------"
+echo "Installing Filebeat"
+echo "-------------------"
+
+# Incluimos el repositorio APT para Elastic
+common::add_elastic_apt_repository
+
+# Instalamos Filebeat y establecemos su configuracion
+apt-get update && apt-get install filebeat 2>> apt-error.log
+filebeat modules enable system
+filebeat modules enable nginx
+settings::set_filebeat_configuration
+
+# Habilitamos el servicio de Filebeat si no lo esta
+common::enable_service filebeat.service
+
+# Arrancamos el servicio de Filebeat si no lo esta
+common::start_service filebeat.service
+
