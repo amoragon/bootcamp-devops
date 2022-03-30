@@ -1,0 +1,113 @@
+name: 'S3 Buckets'
+
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+
+jobs:
+
+  #####################
+  ## DEV environment ##
+  #####################
+
+  s3-dev-bucket:
+    name: 'S3 Dev Bucket'
+    runs-on: ubuntu-latest
+    environment: development
+
+    # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+    # Checkout the repository to the GitHub Actions runner
+    - name: Checkout
+      uses: actions/checkout@v2
+  
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: eu-west-1
+
+    # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
+    - name: Terraform Init
+      working-directory: ./infra
+      run: terraform init
+    
+    - name: Create DEV Terraform Workspace
+      working-directory: ./infra
+      run: |
+        [[ $(terraform workspace list | grep dev | wc -l) -eq 0 ]] && \
+        terraform workspace new dev || \
+        terraform workspace select dev
+
+    - name: Terraform Format
+      working-directory: ./infra
+      run: terraform fmt -check
+
+    - name: Terraform DEV Plan
+      working-directory: ./infra           
+      run: terraform plan -var-file="dev.tfvars"
+
+      # On push to main, build or change infrastructure according to Terraform configuration files
+    - name: Terraform Apply
+      working-directory: ./infra
+      run: terraform apply -var-file="dev.tfvars" -auto-approve
+
+  ############################
+  ## PRODUCTION environment ##
+  ############################
+  
+  s3-prod-bucket:
+    name: 'S3 Prod Bucket'
+    runs-on: ubuntu-latest
+    environment: production
+    needs: [s3-dev-bucket]
+
+    # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
+    defaults:
+      run:
+        shell: bash
+    
+    steps:
+    # Checkout the repository to the GitHub Actions runner
+    - name: Checkout
+      uses: actions/checkout@v2
+  
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: eu-west-1
+
+    # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
+    - name: Terraform Init
+      working-directory: ./infra
+      run: terraform init
+    
+    - name: Create PROD Terraform Workspace
+      working-directory: ./infra
+      run: |
+        [[ $(terraform workspace list | grep prod | wc -l) -eq 0 ]] && \
+        terraform workspace new prod || \
+        terraform workspace select prod
+
+    - name: Terraform Format
+      working-directory: ./infra
+      run: terraform fmt -check
+
+    - name: Terraform PROD Plan
+      working-directory: ./infra           
+      run: terraform plan -var-file="prod.tfvars"
+
+      # On push to main, build or change infrastructure according to Terraform configuration file
+    - name: Terraform Apply
+      working-directory: ./infra
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      run: terraform apply -var-file="prod.tfvars" -auto-approve

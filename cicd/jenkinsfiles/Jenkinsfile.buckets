@@ -1,0 +1,134 @@
+pipeline { 
+    agent {
+        label 'terraform'
+    }
+
+    environment {
+        AWS_ACCESS_KEY_ID = credentials('terraform-secrety-key')
+        AWS_SECRET_ACCESS_KEY = credentials('terraform-secret-access-key')
+    }
+
+    options {
+        timestamps()
+        ansiColor('xterm')
+    }
+
+    stages {
+
+        /////////////////////
+        // DEV environment //
+        /////////////////////
+
+        stage('Development - Init') {
+            steps {
+                dir('infra') {
+                    sh '''
+                        terraform init 
+                   '''
+                }
+            }
+        }
+
+        stage('Development - Workspace create/select') {
+            steps {
+                dir('infra') {
+                    sh '''
+                        [[ $(terraform workspace list | grep dev | wc -l) -eq 0 ]] && \
+                        terraform workspace new dev || \
+                        terraform workspace select dev
+                    '''
+                }
+            }
+        }
+
+        stage('Development - Format') {
+            steps {
+                dir('infra') {
+                    sh '''
+                        terraform fmt -check || \
+                        echo "Revisa el formato de los ficheros terraform"
+                   '''
+                }
+            }
+        }
+        
+        stage('Development - Plan') {
+            steps {
+                dir('infra') {
+                    sh '''
+                        terraform plan -var-file="dev.tfvars"
+                   '''
+                }
+            }
+        }
+
+        stage('Development - Apply') {
+            steps {
+                dir('infra') {
+                    sh '''
+                        terraform apply -var-file="dev.tfvars" -auto-approve 
+                    '''
+                }
+            }
+        }
+
+        ////////////////////////////
+        // PRODUCTION environment //
+        ////////////////////////////
+
+        stage('Production - Init') {
+            steps {
+                dir('infra') {
+                    sh '''
+                        terraform init
+                   '''
+                }
+            }
+        }
+
+        stage('Production - Workspace create/select') {
+            steps {
+                dir('infra') {
+                    sh '''
+                        [[ $(terraform workspace list | grep prod | wc -l) -eq 0 ]] && \
+                        terraform workspace new prod || \
+                        terraform workspace select prod
+                    '''
+                }
+            }
+        }
+
+        stage('Production - Format') {
+            steps {
+                dir('infra') {
+                    sh '''
+                        terraform fmt -check || \
+                        echo "Revisa el formato de los ficheros terraform"
+                   '''
+                }
+            }
+        }
+
+        stage('Production - Plan') {
+            steps {
+                dir('infra') {
+                    sh '''
+                        terraform plan -var-file="prod.tfvars"
+                   '''
+                }
+            }
+        }
+
+        stage('Production - Apply') {
+            steps {
+                dir('infra') {
+                    input message: 'Do you want to create PROD env bucket?', ok: 'Yes, create bucket.'
+                        sh '''
+                            terraform apply -var-file="prod.tfvars" -auto-approve
+                        '''
+                }
+            }
+        }
+    }
+}
+
