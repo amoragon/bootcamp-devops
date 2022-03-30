@@ -381,9 +381,10 @@ stages {
         steps {
             dir('infra') {
                 sh '''
-                    [[ $(aws s3 ls s3://kc-acme-storage-dev --recursive  --summarize | tail -1 | cut -d : -f 2) -gt ${BUCKET_SIZE_LIMIT} ]] && \
-                    aws s3 rm s3://kc-acme-storage-dev --recursive || \
-                    echo "No se ha llegado al limite de ${BUCKET_SIZE_LIMIT}."
+                    BUCKET_DEV=$(aws s3 ls | grep dev | cut -d " " -f 3)
+                    [[ $(aws s3 ls s3://"${BUCKET_DEV}" --recursive  --summarize | tail -1 | cut -d : -f 2) -gt ${BUCKET_SIZE_LIMIT} ]] && \
+                    aws s3 rm s3://"${BUCKET_DEV}" --recursive || \
+                    echo "No se ha llegado al limite de ${
                 '''
             }
         }
@@ -393,8 +394,9 @@ stages {
         steps {
             dir('infra') {
                 sh '''
-                    [[ $(aws s3 ls s3://kc-acme-storage-prod --recursive  --summarize | tail -1 | cut -d : -f 2) -gt ${BUCKET_SIZE_LIMIT} ]] && \
-                    aws s3 rm s3://kc-acme-storage-prod --recursive || \
+                    BUCKET_PROD=$(aws s3 ls | grep prod | cut -d " " -f 3)
+                    [[ $(aws s3 ls s3://"${BUCKET_PROD}" --recursive  --summarize | tail -1 | cut -d : -f 2) -gt ${BUCKET_SIZE_LIMIT} ]] && \
+                    aws s3 rm s3://"${BUCKET_PROD}" --recursive || \
                     echo "No se ha llegado al limite de ${BUCKET_SIZE_LIMIT}."
                 '''
             }
