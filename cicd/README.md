@@ -34,7 +34,7 @@ __Nota:__ Se opta por el uso de AWS para la creación de las unidades de almacen
 <a name="credenciales"></a>
 ## Configuración credenciales AWS
 
-Para la ejecución de Terraform contra AWS es neceario la configuración de las credenciales de acceso. Tal y como se indica en la documentación para AWS de Terrafom [existen varias formas de autenticación] (https://registry.terraform.io/providers/hashicorp/aws/latest/docs#authentication-and-configuration). 
+Para la ejecución de Terraform contra AWS es neceario la configuración de las credenciales de acceso. Tal y como se indica en la documentación para AWS de Terrafom [existen varias formas de autenticación](https://registry.terraform.io/providers/hashicorp/aws/latest/docs#authentication-and-configuration). 
 
 Para la ejecución del Makefile, se ha optado por usar el fichero de credenciales `$HOME/.aws/credentials`.
 
