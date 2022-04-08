@@ -60,9 +60,7 @@ Se siguen los pasos descritos en el enunciado de la práctica para la configurac
 <a name="discos"></a>
 ## Configuración de discos externos para MariaDB y ElasticSearch
 
-Como se indicaba en la nota aclaratoria inicial, en un principio no había podido realizar esta parte por usar VMWare para Mac. Sin embargo, he podido rescatar un iMac antiguo con el cual he podido realizar dicha configuración. Estos cambios los he subido a la rama **virtualbox**.
-
-He podido comprobar que Wordpress arranca correctamente y el disco queda montado en la ruta `/var/lib/mysql`, como se puede ver en la siguiente captura.
+Se comprueba que Wordpress arranca correctamente y el disco queda montado en la ruta `/var/lib/mysql`, como se puede ver en la siguiente captura.
 
 ![disco 1](images/disco1.png)
 
