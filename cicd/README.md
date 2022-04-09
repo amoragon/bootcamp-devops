@@ -384,7 +384,7 @@ stages {
                     BUCKET_DEV=$(aws s3 ls | grep dev | cut -d " " -f 3)
                     [[ $(aws s3 ls s3://"${BUCKET_DEV}" --recursive  --summarize | tail -1 | cut -d : -f 2) -gt ${BUCKET_SIZE_LIMIT} ]] && \
                     aws s3 rm s3://"${BUCKET_DEV}" --recursive || \
-                    echo "No se ha llegado al limite de ${
+                    echo "No se ha llegado al limite de ${BUCKET_SIZE_LIMIT}."
                 '''
             }
         }
