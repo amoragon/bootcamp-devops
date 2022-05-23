@@ -1,6 +1,6 @@
 ## Acerca de
 
-En este repositorio recopilo las prácticas que he realizado durante el 5º Bootcampo DevOps de [KeepCoding](https://keepcoding.io/).
+En este repositorio recopilo las prácticas que he realizado durante el 5º Bootcamp DevOps de [KeepCoding](https://keepcoding.io/).
 
 * [Práctica sysadmin](sysadmin/README.md)
 * [Práctica Google Cloud Platform](gcp/README.md)
