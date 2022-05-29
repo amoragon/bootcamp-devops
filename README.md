@@ -7,4 +7,4 @@ En este repositorio recopilo las prácticas que he realizado durante el 5º Boot
 * [Práctica Docker y Kubernetes](docker-k8s/README.md)
 * [Práctica AWS](aws/README.md)
 * [Práctica CI/CD](cicd/README.md)
-* [Práctica Liberando Productos](liberando-productos/README.MD)
+* [Práctica Liberando Productos](liberando-productos/README.md)
