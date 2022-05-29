@@ -1,0 +1,141 @@
+coreDns:
+  enabled: true
+  service:
+    selector:
+      k8s-app: kube-dns
+kubeControllerManager:
+  enabled: false
+kubeEtcd:
+  enabled: true
+  service:
+    selector:
+      k8s-app: ""
+      component: etcd
+kubeScheduler:
+  enabled: false
+kubeApiServer:
+    enabled: true
+kubelet:
+  enabled: true
+kubeDns:
+  enabled: false
+kubeProxy:
+  enabled: true
+kubeStateMetrics:
+  enabled: true
+nodeExporter:
+  enabled: true
+  jobLabel: node-exporter
+  serviceMonitor:
+    relabelings:
+      - targetLabel: job
+        replacement: node-exporter
+prometheus-node-exporter:
+  podLabels:
+    jobLabel: node-exporter
+  extraArgs:
+    - --collector.filesystem.ignored-mount-points=^/(dev|proc|sys|var/lib/docker/.+|var/lib/kubelet/.+)($|/)
+    - --collector.filesystem.ignored-fs-types=^(autofs|binfmt_misc|bpf|cgroup2?|configfs|debugfs|devpts|devtmpfs|fusectl|hugetlbfs|iso9660|mqueue|nsfs|overlay|proc|procfs|pstore|rpc_pipefs|securityfs|selinuxfs|squashfs|sysfs|tracefs)$
+
+
+prometheus:
+  enabled: true
+  ## Configuration for Prometheus service
+  prometheusSpec:
+    scrapeInterval: 30s
+    scrapeTimeout: 10s
+    enableAdminAPI: true
+
+    externalUrl: ""
+
+    ruleSelectorNilUsesHelmValues: true
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+
+defaultRules:
+  create: true
+  rules:
+    alertmanager: true
+    etcd: true
+    configReloaders: true
+    general: true
+    k8s: true
+    kubeApiserver: true
+    kubeApiserverAvailability: true
+    kubeApiserverSlos: true
+    kubelet: true
+    kubeProxy: true
+    kubePrometheusGeneral: true
+    kubePrometheusNodeRecording: true
+    kubernetesApps: true
+    kubernetesResources: true
+    kubernetesStorage: true
+    kubernetesSystem: true
+    kubeScheduler: false
+    kubeStateMetrics: true
+    network: true
+    node: true
+    nodeExporterAlerting: true
+    nodeExporterRecording: true
+    prometheus: true
+    prometheusOperator: true
+
+## Configuration for alertmanager
+alertmanager:
+  config:
+    global:
+      resolve_timeout: 5m
+    route:
+      group_by: ['job']
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 12h
+      receiver: 'slack'
+      routes:
+      - match:
+          alertname: Watchdog
+        receiver: 'null'
+    # This inhibt rule is a hack from: https://stackoverflow.com/questions/54806336/how-to-silence-prometheus-alertmanager-using-config-files/54814033#54814033
+    inhibit_rules:
+      - target_match_re:
+           alertname: '.+Overcommit'
+        source_match:
+           alertname: 'Watchdog'
+        equal: ['prometheus']
+    receivers:
+    - name: 'null'
+    - name: 'slack'
+      slack_configs:
+      - api_url: 'https://hooks.slack.com/services/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' # URL webhook creado
+        send_resolved: true
+        channel: '#antonio-moragon-prometheus-alarms' # Canal de slack que recibe las notificaciones
+        title: '[{{ .Status | toUpper }}{{ if eq .Status "firing" }}:{{ .Alerts.Firing | len }}{{ end }}] Monitoring Event Notification'
+        text: |-
+          {{ range .Alerts }}
+            *Alert:* {{ .Labels.alertname }} - `{{ .Labels.severity }}`
+            *Description:* {{ .Annotations.message }}
+            *Graph:* <{{ .GeneratorURL }}|:chart_with_upwards_trend:> *Runbook:* <{{ .Annotations.runbook_url }}|:spiral_note_pad:>
+            *Details:*
+            {{ range .Labels.SortedPairs }} • *{{ .Name }}:* `{{ .Value }}`
+            {{ end }}
+          {{ end }}
+
+## Manages Prometheus and Alertmanager components
+prometheusOperator:
+  enabled: true
+
+additionalPrometheusRulesMap:
+  rule-name:
+    groups:
+      - name: PythonAppRuleSet
+        rules:
+          - alert: pythonAppConsumingMoreThanRequest
+            expr: avg by(pod) (container_cpu_usage_seconds_total{container="python-app"}) > avg by(pod) (kube_pod_container_resource_requests{container="python-app",resource="cpu"})
+            for: 0m
+            labels:
+              severity: critical
+              alertname: "python-app container is consuming more than requested" 
+            annotations:
+              summary: Pod {{ $labels.pod }} consuming more than requested
+              description: "Pod more less than request"
+              message: Pod {{ $labels.pod }} is consuming more than requested
