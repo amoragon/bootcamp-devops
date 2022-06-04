@@ -1,0 +1,41 @@
+name: Build & Push
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  DOCKERHUB_USER: amoragon  
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      
+      - name: Set up docker image name
+        run: |
+          # ${{ github.repository }} devuelve KeepCodingCloudDevops5/liberando-productos-antonio y queremos amoragon/liberando-productos-antonio
+          echo IMAGE_NAME=$DOCKERHUB_USER/$(echo ${{ github.repository }} | cut -d / -f 2):${{ github.ref_name }} >> $GITHUB_ENV
+          echo IMAGE_NAME_LATEST=$DOCKERHUB_USER/$(echo ${{ github.repository }} | cut -d / -f 2):latest >> $GITHUB_ENV
+      
+      - name: Setup Docker buildx
+        uses: docker/setup-buildx-action@v1.7.0
+
+      - name: Log into registry
+        uses: docker/login-action@28218f9b04b4f3f62068d7b6ce6ca5b26e35336c
+        with:
+          username: ${{ env.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        id: build-and-push
+        uses: docker/build-push-action@ac9327eae2b366085ac7f6a2d02df8aa8ead720a
+        with:
+          context: .
+          push: true       
+          platforms: linux/amd64
+          tags: ${{ env.IMAGE_NAME }}, ${{ env.IMAGE_NAME_LATEST }}
